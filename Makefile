@@ -89,4 +89,4 @@ clean:
 	@find -depth -type d -name __pycache__ -exec rm -Rf {} \;
 	@find -type f -name '*.pyc' -delete
 
-.PHONY: default install reset check test tox readme docs publish clean
+.PHONY: default install reset check test tox full-coverage cog releases readme docs publish clean
