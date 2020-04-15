@@ -103,7 +103,14 @@ class AptMirrorUpdaterTestCase(TestCase):
         on individual webmaster's perceptions of what expected clients
         (apt-get) should and shouldn't be accessing :-).
         """
-        # At the time of writing this test seems to work on all mirrors except for the one below.
+        if url == 'http://ubuntu.cs.utah.edu/ubuntu':
+            # This mirror intermittently serves 404 errors on arbitrary URLs.
+            # Apart from that it does look to contain the expected directory
+            # layout. Seems like they're load balancing between good and bad
+            # servers (where the bad servers have a broken configuration).
+            return True
+        # At the time of writing the following test seems to work on all
+        # mirrors apart from the exceptions noted in this method.
         if self.is_mirror_url(url, '/project/ubuntu-archive-keyring.gpg', b'ftpmaster@ubuntu.com'):
             return True
         # The mirror http://mirrors.codec-cluster.org/ubuntu fails the above
