@@ -10,8 +10,8 @@ apt-mirror-updater: Automated Debian/Ubuntu mirror selection
 The `apt-mirror-updater` package automates robust apt-get_ mirror selection for
 Debian_ and Ubuntu_ by enabling discovery of available mirrors, ranking of
 available mirrors, automatic switching between mirrors and robust package list
-updating (see features_). It's currently tested on Python 2.6, 2.7, 3.4, 3.5,
-3.6 and PyPy (although test coverage is still rather low, see status_).
+updating (see features_). It's currently tested on Python 2.7, 3.5+ and PyPy
+(although test coverage is still rather low, see status_).
 
 .. contents::
    :local:
