@@ -38,16 +38,75 @@ class AptMirrorUpdaterTestCase(TestCase):
 
     """:mod:`unittest` compatible container for the :mod:`apt_mirror_updater` test suite."""
 
+    def check_debian_mirror(self, url):
+        """Ensure the given URL looks like a Debian mirror URL."""
+        if not self.is_debian_mirror(url):
+            msg = "Invalid Debian mirror URL! (%r)"
+            raise AssertionError(msg % url)
+
     def check_mirror_url(self, url):
         """Check whether the given URL looks like a mirror URL for the system running the test suite."""
         if not hasattr(self, 'context'):
             self.context = LocalContext()
         if self.context.distributor_id == 'debian':
-            check_debian_mirror(url)
+            self.check_debian_mirror(url)
         elif self.context.distributor_id == 'ubuntu':
-            check_ubuntu_mirror(url)
+            self.check_ubuntu_mirror(url)
         else:
             raise Exception("Unsupported platform!")
+
+    def check_ubuntu_mirror(self, url):
+        """Ensure the given URL looks like a Ubuntu mirror URL."""
+        if not self.is_ubuntu_mirror(url):
+            msg = "Invalid Ubuntu mirror URL! (%r)"
+            raise AssertionError(msg % url)
+
+    def is_debian_mirror(self, url):
+        """Check whether the given URL looks like a Debian mirror URL."""
+        return self.is_mirror_url(url, '/dists/stable/Release.gpg', b'-----BEGIN PGP SIGNATURE-----')
+
+    def is_mirror_url(self, base_url, stable_resource, expected_content):
+        """Validate a given mirror URL based on a stable resource URL and its expected response."""
+        base_url = normalize_mirror_url(base_url)
+        if base_url.startswith(('http://', 'https://')):
+            if not hasattr(self, 'mirror_cache'):
+                self.mirror_cache = {}
+            cache_key = (base_url, stable_resource, expected_content)
+            if cache_key not in self.mirror_cache:
+                try:
+                    # Look for a file with a stable filename (assumed to always be available).
+                    resource_url = base_url + stable_resource
+                    response = fetch_url(resource_url)
+                    # Check the contents of the response.
+                    if expected_content in response:
+                        logger.info("URL %s served expected content.", resource_url)
+                        self.mirror_cache[cache_key] = True
+                    else:
+                        logger.warning("URL %s didn't serve expected content!", resource_url)
+                        self.mirror_cache[cache_key] = False
+                except Exception:
+                    logger.warning("Got exception while validating mirror!", exc_info=True)
+                    self.mirror_cache[cache_key] = False
+            return self.mirror_cache[cache_key]
+        return False
+
+    def is_ubuntu_mirror(self, url):
+        """
+        Check whether the given URL looks like a Ubuntu mirror URL.
+
+        This is a bit convoluted because different mirrors forbid access to
+        different resources (resulting in HTTP 403 responses) apparently based
+        on individual webmaster's perceptions of what expected clients
+        (apt-get) should and shouldn't be accessing :-).
+        """
+        # At the time of writing this test seems to work on all mirrors except for the one below.
+        if self.is_mirror_url(url, '/project/ubuntu-archive-keyring.gpg', b'ftpmaster@ubuntu.com'):
+            return True
+        # The mirror http://mirrors.codec-cluster.org/ubuntu fails the above
+        # test because of a 403 response so we have to compensate. Because
+        # other mirrors may behave similarly in the future this is implemented
+        # as a generic test (not based on the mirror URL).
+        return self.is_mirror_url(url, '/dists/devel/Release.gpg', b'-----BEGIN PGP SIGNATURE-----')
 
     def test_debian_mirror_discovery(self):
         """Test the discovery of Debian mirror URLs."""
@@ -55,7 +114,7 @@ class AptMirrorUpdaterTestCase(TestCase):
         mirrors = discover_mirrors()
         assert len(mirrors) > 10
         for candidate in mirrors:
-            check_debian_mirror(candidate.mirror_url)
+            self.check_debian_mirror(candidate.mirror_url)
 
     def test_ubuntu_mirror_discovery(self):
         """Test the discovery of Ubuntu mirror URLs."""
@@ -63,7 +122,7 @@ class AptMirrorUpdaterTestCase(TestCase):
         mirrors = discover_mirrors()
         assert len(mirrors) > 10
         for candidate in mirrors:
-            check_ubuntu_mirror(candidate.mirror_url)
+            self.check_ubuntu_mirror(candidate.mirror_url)
 
     def test_adaptive_mirror_discovery(self):
         """Test the discovery of mirrors for the current type of system."""
@@ -188,51 +247,3 @@ def have_package_lists():
     download the package archive that installs the ``python`` package.
     """
     return 'Filename:' in execute('apt-cache', 'show', 'python', check=False, capture=True)
-
-
-def check_debian_mirror(url):
-    """Ensure the given URL looks like a Debian mirror URL."""
-    if not is_debian_mirror(url):
-        msg = "Invalid Debian mirror URL! (%r)"
-        raise AssertionError(msg % url)
-
-
-def check_ubuntu_mirror(url):
-    """Ensure the given URL looks like a Ubuntu mirror URL."""
-    if not is_ubuntu_mirror(url):
-        msg = "Invalid Ubuntu mirror URL! (%r)"
-        raise AssertionError(msg % url)
-
-
-def is_debian_mirror(url):
-    """Check whether the given URL looks like a Debian mirror URL."""
-    return is_mirror_url(url, '/dists/stable/Release.gpg', b'-----BEGIN PGP SIGNATURE-----')
-
-
-def is_ubuntu_mirror(url):
-    """Check whether the given URL looks like a Ubuntu mirror URL."""
-    return is_mirror_url(url, '/project/ubuntu-archive-keyring.gpg', b'ftpmaster@ubuntu.com')
-
-
-def is_mirror_url(base_url, stable_resource, expected_content):
-    """Validate a given mirror URL based on a stable resource URL and its expected response."""
-    base_url = normalize_mirror_url(base_url)
-    if has_compatible_scheme(base_url):
-        try:
-            # Look for a file with a stable filename (assumed to always be available).
-            resource_url = base_url + stable_resource
-            response = fetch_url(resource_url)
-            # Check the contents of the response.
-            if expected_content in response:
-                logger.info("URL %s served expected content.", resource_url)
-                return True
-            else:
-                logger.warning("URL %s didn't serve expected content!", resource_url)
-        except Exception:
-            logger.warning("Got exception while validating mirror!", exc_info=True)
-    return False
-
-
-def has_compatible_scheme(url):
-    """Check whether the given URL uses a scheme compatible with and intended to be used by apt."""
-    return url.startswith(('http://', 'https://'))
