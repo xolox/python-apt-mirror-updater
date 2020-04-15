@@ -1,7 +1,7 @@
 # Easy to use metadata on Debian and Ubuntu releases.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: October 20, 2018
+# Last Change: April 15, 2020
 # URL: https://apt-mirror-updater.readthedocs.io
 
 """
@@ -175,7 +175,7 @@ def parse_csv_file(filename):
                         'LTS' in entry['version'] if distributor_id == 'ubuntu' else (
                             # Neither Debian nor Ubuntu, let's not assume anything...
                             False
-                        ),
+                        )
                     )
                 ),
                 created_date=parse_date(entry['created']),
