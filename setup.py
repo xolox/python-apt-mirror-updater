@@ -3,7 +3,7 @@
 # Setup script for the `apt-mirror-updater' package.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: June 22, 2018
+# Last Change: April 15, 2020
 # URL: https://apt-mirror-updater.readthedocs.io
 
 """
@@ -23,7 +23,6 @@ Setup script for the `apt-mirror-updater` package.
 import codecs
 import os
 import re
-import sys
 
 # De-facto standard solution for Python packaging.
 from setuptools import find_packages, setup
@@ -40,36 +39,6 @@ def get_version(*args):
     contents = get_contents(*args)
     metadata = dict(re.findall('__([a-z]+)__ = [\'"]([^\'"]+)', contents))
     return metadata['version']
-
-
-def get_install_requires():
-    """Get the conditional dependencies for source distributions."""
-    install_requires = get_requirements('requirements.txt')
-    if 'bdist_wheel' not in sys.argv:
-        if sys.version_info[:2] == (2, 6):
-            # flufl.enum 4.1 drops Python 2.6 compatibility.
-            install_requires.append('flufl.enum >= 4.0.1, < 4.1')
-        elif sys.version_info[:2] < (3, 4):
-            install_requires.append('flufl.enum >= 4.0.1')
-    return sorted(install_requires)
-
-
-def get_extras_require():
-    """Get the conditional dependencies for wheel distributions."""
-    extras_require = {}
-    if have_environment_marker_support():
-        # flufl.enum 4.1 drops Python 2.6 compatibility.
-        extras_require[':python_version == "2.6"'] = ['flufl.enum >= 4.0.1, < 4.1']
-        expression = ':%s' % ' or '.join([
-            'python_version == "2.6"',
-            'python_version == "2.7"',
-            'python_version == "3.0"',
-            'python_version == "3.1"',
-            'python_version == "3.2"',
-            'python_version == "3.3"',
-        ])
-        extras_require[expression] = ['flufl.enum >= 4.0.1']
-    return extras_require
 
 
 def get_requirements(*args):
@@ -90,21 +59,6 @@ def get_absolute_path(*args):
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), *args)
 
 
-def have_environment_marker_support():
-    """
-    Check whether setuptools has support for PEP-426 environment marker support.
-
-    Based on the ``setup.py`` script of the ``pytest`` package:
-    https://bitbucket.org/pytest-dev/pytest/src/default/setup.py
-    """
-    try:
-        from pkg_resources import parse_version
-        from setuptools import __version__
-        return parse_version(__version__) >= parse_version('0.7.2')
-    except Exception:
-        return False
-
-
 setup(
     name='apt-mirror-updater',
     version=get_version('apt_mirror_updater', '__init__.py'),
@@ -115,8 +69,7 @@ setup(
     author_email='peter@peterodding.com',
     license='MIT',
     packages=find_packages(),
-    install_requires=get_install_requires(),
-    extras_require=get_extras_require(),
+    install_requires=get_requirements('requirements.txt'),
     entry_points=dict(console_scripts=[
         'apt-mirror-updater = apt_mirror_updater.cli:main',
     ]),
@@ -131,10 +84,8 @@ setup(
         'Operating System :: POSIX :: Linux',
         'Programming Language :: Python',
         'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: Implementation :: CPython',
