@@ -88,7 +88,7 @@ class AptMirrorUpdaterTestCase(TestCase):
                 except TimeoutException:
                     logger.warning("URL %s reported timeout, not failing test suite on this ..")
                     self.mirror_cache[cache_key] = True
-                except Exception as e:
+                except Exception:
                     logger.warning("URL %s triggered exception!", resource_url, exc_info=True)
                     self.mirror_cache[cache_key] = False
             return self.mirror_cache[cache_key]
