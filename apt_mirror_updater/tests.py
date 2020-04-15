@@ -1,7 +1,7 @@
 # Automated, robust apt-get mirror selection for Debian and Ubuntu.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: October 19, 2018
+# Last Change: April 15, 2020
 # URL: https://apt-mirror-updater.readthedocs.io
 
 """Test suite for the ``apt-mirror-updater`` package."""
@@ -14,12 +14,13 @@ import time
 
 # External dependencies.
 from executor import execute
+from executor.contexts import LocalContext
 from humanfriendly.testing import TestCase, run_cli
-from humanfriendly.text import split
 
 # Modules included in our package.
 from apt_mirror_updater import AptMirrorUpdater, normalize_mirror_url
 from apt_mirror_updater.cli import main
+from apt_mirror_updater.http import fetch_url
 from apt_mirror_updater.releases import (
     DEBIAN_KEYRING_CURRENT,
     UBUNTU_KEYRING_CURRENT,
@@ -36,6 +37,17 @@ logger = logging.getLogger(__name__)
 class AptMirrorUpdaterTestCase(TestCase):
 
     """:mod:`unittest` compatible container for the :mod:`apt_mirror_updater` test suite."""
+
+    def check_mirror_url(self, url):
+        """Check whether the given URL looks like a mirror URL for the system running the test suite."""
+        if not hasattr(self, 'context'):
+            self.context = LocalContext()
+        if self.context.distributor_id == 'debian':
+            check_debian_mirror(url)
+        elif self.context.distributor_id == 'ubuntu':
+            check_ubuntu_mirror(url)
+        else:
+            raise Exception("Unsupported platform!")
 
     def test_debian_mirror_discovery(self):
         """Test the discovery of Debian mirror URLs."""
@@ -58,7 +70,7 @@ class AptMirrorUpdaterTestCase(TestCase):
         updater = AptMirrorUpdater()
         assert len(updater.available_mirrors) > 10
         for candidate in updater.available_mirrors:
-            check_mirror_url(candidate.mirror_url)
+            self.check_mirror_url(candidate.mirror_url)
 
     def test_mirror_ranking(self):
         """Test the ranking of discovered mirrors."""
@@ -69,13 +81,13 @@ class AptMirrorUpdaterTestCase(TestCase):
     def test_best_mirror_selection(self):
         """Test the selection of a "best" mirror."""
         updater = AptMirrorUpdater()
-        check_mirror_url(updater.best_mirror)
+        self.check_mirror_url(updater.best_mirror)
 
     def test_current_mirror_discovery(self):
         """Test that the current mirror can be extracted from ``/etc/apt/sources.list``."""
         exit_code, output = run_cli(main, '--find-current-mirror')
         assert exit_code == 0
-        check_mirror_url(output.strip())
+        self.check_mirror_url(output.strip())
 
     def test_dumb_update(self):
         """Test that our dumb ``apt-get update`` wrapper works."""
@@ -178,13 +190,6 @@ def have_package_lists():
     return 'Filename:' in execute('apt-cache', 'show', 'python', check=False, capture=True)
 
 
-def check_mirror_url(url):
-    """Check whether the given URL looks like a Debian or Ubuntu mirror URL."""
-    if not (is_debian_mirror(url) or is_ubuntu_mirror(url)):
-        msg = "Invalid mirror URL! (%r)"
-        raise AssertionError(msg % url)
-
-
 def check_debian_mirror(url):
     """Ensure the given URL looks like a Debian mirror URL."""
     if not is_debian_mirror(url):
@@ -203,19 +208,28 @@ def is_debian_mirror(url):
     """Check whether the given URL looks like a Debian mirror URL."""
     url = normalize_mirror_url(url)
     if has_compatible_scheme(url):
-        components = split(url, '/')
-        return components[-1] == 'debian'
+        try:
+            # Look for a file with a stable filename (assumed to always be available).
+            fetch_url(url + '/dists/stable/Release.gpg')
+        except Exception:
+            pass
+        else:
+            return True
+    return False
 
 
 def is_ubuntu_mirror(url):
     """Check whether the given URL looks like a Ubuntu mirror URL."""
     url = normalize_mirror_url(url)
     if has_compatible_scheme(url):
-        # This function previously performed much more specific checks but in
-        # 2018 the test suite started encountering a number of legitimate
-        # mirror URLs that no longer passed the checks. As such this function
-        # was dumbed down until nothing much remained :-P.
-        return 'ubuntu' in url.lower()
+        try:
+            # Look for a file with a stable filename (assumed to always be available).
+            fetch_url(url + '/project/ubuntu-archive-keyring.gpg')
+        except Exception:
+            pass
+        else:
+            return True
+    return False
 
 
 def has_compatible_scheme(url):
