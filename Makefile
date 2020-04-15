@@ -74,7 +74,7 @@ readme: cog
 
 docs: releases readme
 	@pip install --quiet sphinx
-	@cd docs && sphinx-build -nb html -d build/doctrees . build/html
+	@cd docs && sphinx-build -nWb html -d build/doctrees . build/html
 
 publish: install
 	@git push origin && git push --tags origin

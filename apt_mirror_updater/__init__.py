@@ -86,7 +86,7 @@ class AptMirrorUpdater(PropertyManager):
     Override the list of properties included in :func:`repr()` output (a tuple of strings).
 
     The :class:`~property_manager.PropertyManager` superclass defines a
-    :class:`~property_manager.PropertyManager.__repr__()` method that includes
+    :meth:`~property_manager.PropertyManager.__repr__()` method that includes
     the values of computed properties in its output.
 
     In the case of `apt-mirror-updater` this behavior would trigger external

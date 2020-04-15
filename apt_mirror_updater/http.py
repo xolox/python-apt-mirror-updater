@@ -39,11 +39,13 @@ def fetch_url(url, timeout=10, retry=False, max_attempts=3):
              - :exc:`NotFoundError` when the URL returns a 404 status code.
              - :exc:`InvalidResponseError` when the URL returns a status code
                that isn't 200.
-             - :exc:`stopit.TimeoutException` when the request takes longer
-               than `timeout` seconds (refer to the `stopit documentation
-               <https://pypi.python.org/pypi/stopit>`_ for details).
+             - `stopit.TimeoutException`_ when the request takes longer
+               than `timeout` seconds (refer to the linked documentation for
+               details).
              - Any exception raised by Python's standard library in the last
                attempt (assuming all attempts raise an exception).
+
+    .. _stopit.TimeoutException: https://pypi.org/project/stopit/#exception
     """
     timer = Timer()
     logger.debug("Fetching %s ..", url)
