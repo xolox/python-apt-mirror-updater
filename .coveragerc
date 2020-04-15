@@ -1,3 +1,6 @@
 [run]
-source = apt_mirror_updater
+branch = true
+concurrency = multiprocessing
 omit = apt_mirror_updater/tests.py
+parallel = True
+source = apt_mirror_updater

@@ -1,7 +1,7 @@
 # Automated, robust apt-get mirror selection for Debian and Ubuntu.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: October 31, 2017
+# Last Change: April 15, 2020
 # URL: https://apt-mirror-updater.readthedocs.io
 
 """Simple, robust and concurrent HTTP requests (designed for one very narrow use case)."""
@@ -81,9 +81,14 @@ def fetch_concurrent(urls, concurrency=None):
         concurrency = get_default_concurrency()
     pool = multiprocessing.Pool(concurrency)
     try:
-        return pool.map(fetch_worker, urls, chunksize=1)
-    finally:
+        results = pool.map(fetch_worker, urls, chunksize=1)
+        pool.close()
+        pool.join()
+        return results
+    except Exception:
         pool.terminate()
+        pool.join()
+        raise
 
 
 def get_default_concurrency():
