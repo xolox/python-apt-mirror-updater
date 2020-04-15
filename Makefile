@@ -1,7 +1,7 @@
 # Makefile for the 'apt-mirror-updater' package.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: October 14, 2018
+# Last Change: April 15, 2020
 # URL: https://apt-mirror-updater.readthedocs.io
 
 PACKAGE_NAME = apt-mirror-updater
@@ -21,7 +21,7 @@ default:
 	@echo '    make check      check coding style (PEP-8, PEP-257)'
 	@echo '    make test       run the test suite, report coverage'
 	@echo '    make tox        run the tests on all Python versions'
-	@echo '    make eol        update apt_mirror_updater.eol module'
+	@echo '    make releases   update apt_mirror_updater.releases module'
 	@echo '    make readme     update usage in readme'
 	@echo '    make docs       update documentation using Sphinx'
 	@echo '    make publish    publish changes to GitHub/PyPI'
