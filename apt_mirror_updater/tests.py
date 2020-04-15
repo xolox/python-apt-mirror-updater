@@ -206,29 +206,30 @@ def check_ubuntu_mirror(url):
 
 def is_debian_mirror(url):
     """Check whether the given URL looks like a Debian mirror URL."""
-    url = normalize_mirror_url(url)
-    if has_compatible_scheme(url):
-        try:
-            # Look for a file with a stable filename (assumed to always be available).
-            fetch_url(url + '/dists/stable/Release.gpg')
-        except Exception:
-            pass
-        else:
-            return True
-    return False
+    return is_mirror_url(url, '/dists/stable/Release.gpg', b'-----BEGIN PGP SIGNATURE-----')
 
 
 def is_ubuntu_mirror(url):
     """Check whether the given URL looks like a Ubuntu mirror URL."""
-    url = normalize_mirror_url(url)
-    if has_compatible_scheme(url):
+    return is_mirror_url(url, '/project/ubuntu-archive-keyring.gpg', b'ftpmaster@ubuntu.com')
+
+
+def is_mirror_url(base_url, stable_resource, expected_content):
+    """Validate a given mirror URL based on a stable resource URL and its expected response."""
+    base_url = normalize_mirror_url(base_url)
+    if has_compatible_scheme(base_url):
         try:
             # Look for a file with a stable filename (assumed to always be available).
-            fetch_url(url + '/project/ubuntu-archive-keyring.gpg')
+            resource_url = base_url + stable_resource
+            response = fetch_url(resource_url)
+            # Check the contents of the response.
+            if expected_content in response:
+                logger.info("URL %s served expected content.", resource_url)
+                return True
+            else:
+                logger.warning("URL %s didn't serve expected content!", resource_url)
         except Exception:
-            pass
-        else:
-            return True
+            logger.warning("Got exception while validating mirror!", exc_info=True)
     return False
 
 
