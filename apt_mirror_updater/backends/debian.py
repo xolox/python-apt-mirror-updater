@@ -1,7 +1,7 @@
 # Automated, robust apt-get mirror selection for Debian and Ubuntu.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: June 22, 2018
+# Last Change: April 15, 2020
 # URL: https://apt-mirror-updater.readthedocs.io
 
 """
@@ -20,11 +20,11 @@ import logging
 
 # External dependencies.
 from bs4 import BeautifulSoup
-from humanfriendly import Timer, format, pluralize
+from humanfriendly import Timer
+from humanfriendly.text import format, pluralize
 
 # Modules included in our package.
 from apt_mirror_updater import CandidateMirror, mirrors_are_equal
-
 from apt_mirror_updater.http import fetch_url
 
 LTS_ARCHITECTURES = ('i386', 'amd64', 'armel', 'armhf')

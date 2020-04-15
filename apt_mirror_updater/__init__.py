@@ -1,7 +1,7 @@
 # Automated, robust apt-get mirror selection for Debian and Ubuntu.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: October 19, 2018
+# Last Change: April 15, 2020
 # URL: https://apt-mirror-updater.readthedocs.io
 
 """
@@ -29,7 +29,9 @@ except ImportError:
 # External dependencies.
 from capturer import CaptureOutput
 from executor.contexts import ChangeRootContext, LocalContext
-from humanfriendly import AutomaticSpinner, Timer, compact, format_timespan, pluralize
+from humanfriendly import Timer, format_timespan
+from humanfriendly.text import compact, pluralize
+from humanfriendly.terminal.spinners import AutomaticSpinner
 from property_manager import (
     PropertyManager,
     cached_property,

@@ -1,7 +1,7 @@
 # Automated, robust apt-get mirror selection for Debian and Ubuntu.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: June 14, 2017
+# Last Change: April 15, 2020
 # URL: https://apt-mirror-updater.readthedocs.io
 
 """
@@ -87,7 +87,8 @@ import sys
 # External dependencies.
 import coloredlogs
 from executor.contexts import LocalContext, RemoteContext
-from humanfriendly import format_size, format_table, format_timespan
+from humanfriendly import format_size, format_timespan
+from humanfriendly.tables import format_smart_table
 from humanfriendly.terminal import connected_to_terminal, output, usage, warning
 
 # Modules included in our package.
@@ -197,7 +198,7 @@ def report_available_mirrors(updater):
                 row.append("%s/s" % format_size(round(candidate.bandwidth, 2))
                            if candidate.bandwidth else "Unknown")
             data.append(row)
-        output(format_table(data, column_names=column_names))
+        output(format_smart_table(data, column_names=column_names))
     else:
         output(u"\n".join(
             candidate.mirror_url for candidate in updater.ranked_mirrors
