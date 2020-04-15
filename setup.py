@@ -73,6 +73,7 @@ setup(
     entry_points=dict(console_scripts=[
         'apt-mirror-updater = apt_mirror_updater.cli:main',
     ]),
+    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*',
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Console',
