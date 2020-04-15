@@ -196,7 +196,7 @@ License
 
 This software is licensed under the `MIT license`_.
 
-© 2018 Peter Odding.
+© 2020 Peter Odding.
 
 
 .. External references:
