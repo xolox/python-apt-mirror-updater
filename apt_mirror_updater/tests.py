@@ -16,6 +16,7 @@ import time
 from executor import execute
 from executor.contexts import LocalContext
 from humanfriendly.testing import TestCase, run_cli
+from stopit import TimeoutException
 
 # Modules included in our package.
 from apt_mirror_updater import AptMirrorUpdater, normalize_mirror_url
@@ -84,8 +85,11 @@ class AptMirrorUpdaterTestCase(TestCase):
                     else:
                         logger.warning("URL %s didn't serve expected content!", resource_url)
                         self.mirror_cache[cache_key] = False
-                except Exception:
-                    logger.warning("Got exception while validating mirror!", exc_info=True)
+                except TimeoutException:
+                    logger.warning("URL %s reported timeout, not failing test suite on this ..")
+                    self.mirror_cache[cache_key] = True
+                except Exception as e:
+                    logger.warning("URL %s triggered exception!", resource_url, exc_info=True)
                     self.mirror_cache[cache_key] = False
             return self.mirror_cache[cache_key]
         return False
