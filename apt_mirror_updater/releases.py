@@ -1,7 +1,7 @@
 # Easy to use metadata on Debian and Ubuntu releases.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: April 15, 2020
+# Last Change: April 16, 2020
 # URL: https://apt-mirror-updater.readthedocs.io
 
 """
@@ -72,6 +72,11 @@ __all__ = (
     'Release',
     'coerce_release',
     'discover_releases',
+    'is_version_string',
+    'logger',
+    'parse_csv_file',
+    'parse_date',
+    'parse_version',
     'ubuntu_keyring_updated',
 )
 
@@ -124,12 +129,12 @@ def discover_releases():
              :attr:`~Release.distributor_id` and :attr:`~Release.version`.
 
     The first time this function is called it will try to parse the CSV files
-    in ``/usr/share/distro-info`` and merge any releases it finds with the
-    releases embedded into the source code of this module. The result is cached
-    and returned each time the function is called. It's not a problem if the
-    ``/usr/share/distro-info`` directory doesn't exist or doesn't contain any
-    ``*.csv`` files (it won't cause a warning or error). Of course in this case
-    only the embedded releases will be returned.
+    in ``/usr/share/distro-info`` using :func:`parse_csv_file()` and merge any
+    releases it finds with the releases embedded into the source code of this
+    module. The result is cached and returned each time the function is called.
+    It's not a problem if the ``/usr/share/distro-info`` directory doesn't
+    exist or doesn't contain any ``*.csv`` files (it won't cause a warning or
+    error). Of course in this case only the embedded releases will be returned.
     """
     # Discover the known releases on the first call to discover_releases().
     # First we check the CSV files on the system where apt-mirror-updater
