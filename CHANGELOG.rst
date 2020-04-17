@@ -11,6 +11,22 @@ to `semantic versioning`_.
 .. _Keep a Changelog: http://keepachangelog.com/
 .. _semantic versioning: http://semver.org/
 
+`Release 7.1`_ (2020-04-17)
+---------------------------
+
+After Ubuntu 14.04 went EOL it became clear that when a release goes EOL and
+when it is archived (moved from the package mirrors to the old-releases
+environment) can differ by a year...
+
+This release of apt-mirror-updater acknowledges this distinction in the code
+and properly handles the situation where a release has already gone EOL but has
+not yet been archived.
+
+This was also reported in `issue #9`_ by a colleague and friend of mine.
+
+.. _Release 7.1: https://github.com/xolox/python-apt-mirror-updater/compare/7.0...7.1
+.. _issue #9: https://github.com/xolox/python-apt-mirror-updater/issues/9
+
 `Release 7.0`_ (2020-04-16)
 ---------------------------
 
