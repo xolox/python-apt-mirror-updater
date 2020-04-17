@@ -124,8 +124,8 @@ class AptMirrorUpdater(PropertyManager):
         ordering of the list should be considered arbitrary.
         """
         mirrors = set()
-        if self.release_is_eol:
-            logger.debug("Skipping mirror discovery because %s is EOL.", self.release)
+        if self.release_is_archived:
+            logger.debug("Skipping mirror discovery because %s is EOL and has been archived.", self.release)
         else:
             for candidate in self.backend.discover_mirrors():
                 if any(fnmatch.fnmatch(candidate.mirror_url, pattern) for pattern in self.blacklist):
@@ -171,11 +171,11 @@ class AptMirrorUpdater(PropertyManager):
 
         This is a shortcut for using :attr:`ranked_mirrors` to select the
         best mirror from :attr:`available_mirrors`, falling back to the
-        old releases URL when :attr:`release_is_eol` is :data:`True`.
+        old releases URL when :attr:`release_is_archived` is :data:`True`.
         """
         logger.debug("Selecting best %s mirror ..", self.distributor_id.capitalize())
-        if self.release_is_eol:
-            logger.info("%s is EOL, using %s.", self.release, self.old_releases_url)
+        if self.release_is_archived:
+            logger.info("%s is EOL and has been archived, using %s.", self.release, self.old_releases_url)
             return self.old_releases_url
         else:
             return self.ranked_mirrors[0].mirror_url
@@ -336,6 +336,8 @@ class AptMirrorUpdater(PropertyManager):
         - As a fall back :func:`validate_mirror()` is used to check whether
           :attr:`security_url` results in :data:`MirrorStatus.MAYBE_EOL`.
 
+        .. seealso:: The :attr:`release_is_archived` property
+
         .. _Debian LTS: https://wiki.debian.org/LTS
         .. _issue #5: https://github.com/xolox/python-apt-mirror-updater/issues/5
         """
@@ -361,6 +363,37 @@ class AptMirrorUpdater(PropertyManager):
         )
         return release_is_eol
 
+    @cached_property
+    def release_is_archived(self):
+        """
+        :data:`True` if the release has been archived, :data:`False` otherwise.
+
+        Archived releases are no longer available on regular package mirrors,
+        instead they're served from a dedicated old-releases environment.
+
+        This property was added to acknowledge the discrepancy between when a
+        release hits its EOL date and when it's actually removed from mirrors:
+
+        - The EOL date of Ubuntu 14.04 (Trusty Tahr) is 2019-04-25.
+
+        - At the time of writing it is 2020-04-17 and this release still hasn't
+          been archived! (a year later)
+
+        For more information please refer to `issue #9`_.
+
+        .. seealso:: The :attr:`release_is_eol` property
+
+        .. _issue #9: https://github.com/xolox/python-apt-mirror-updater/issues/9
+        """
+        if self.release_is_eol:
+            logger.info("Release %s is EOL, checking if it has been archived ..", self.release)
+            if self.validate_mirror(self.old_releases_url) == MirrorStatus.AVAILABLE:
+                logger.info("Confirmed that release %s has been archived.", self.release)
+                return True
+            else:
+                logger.info("No release %s hasn't been archived yet.", self.release)
+        return False
+
     @mutable_property
     def security_url(self):
         """The URL of the mirror that serves security updates for this :attr:`backend` (a string)."""
@@ -381,8 +414,8 @@ class AptMirrorUpdater(PropertyManager):
         download all package lists and this takes a lot of time so should it be
         avoided when unnecessary.
         """
-        if self.release_is_eol:
-            logger.debug("%s is EOL, falling back to %s.", self.release, self.old_releases_url)
+        if self.release_is_archived:
+            logger.debug("%s is EOL and has been archived, falling back to %s.", self.release, self.old_releases_url)
             return self.old_releases_url
         else:
             try:
@@ -418,8 +451,8 @@ class AptMirrorUpdater(PropertyManager):
         # Parse /etc/apt/sources.list to replace the old mirror with the new one.
         sources_list = self.get_sources_list()
         mirrors_to_replace = [normalize_mirror_url(find_current_mirror(sources_list))]
-        if self.release_is_eol:
-            # When a release goes EOL the security updates mirrors stop
+        if self.release_is_archived:
+            # When a release is archived the security updates mirrors stop
             # serving that release as well, so we need to remove them.
             logger.debug("Replacing %s URLs as well ..", self.security_url)
             mirrors_to_replace.append(normalize_mirror_url(self.security_url))
@@ -664,10 +697,12 @@ class AptMirrorUpdater(PropertyManager):
                         # we need to verify our assumption.
                         if any(self.current_mirror in line and u'404' in line.split() for line in output.splitlines()):
                             logger.warning("%s may be EOL, checking ..", self.release)
-                            if self.release_is_eol:
+                            if self.release_is_archived:
                                 if switch_mirrors:
-                                    logger.warning("Switching to old releases mirror because %s is EOL ..",
-                                                   self.release)
+                                    logger.warning(
+                                        "Switching to old releases mirror because %s is EOL and has been archived ..",
+                                        self.release,
+                                    )
                                     self.change_mirror(self.old_releases_url, update=False)
                                     continue
                                 else:
@@ -703,33 +738,30 @@ class AptMirrorUpdater(PropertyManager):
 
         This method assumes that :attr:`old_releases_url` is always valid.
         """
-        if mirrors_are_equal(mirror_url, self.old_releases_url):
-            return MirrorStatus.AVAILABLE
-        else:
-            mirror_url = normalize_mirror_url(mirror_url)
-            key = (mirror_url, self.distribution_codename)
-            value = self.validated_mirrors.get(key)
-            if value is None:
-                logger.info("Checking if %s is available on %s ..", self.release, mirror_url)
-                # Try to download the Release.gpg file, in the assumption that
-                # this file should always exist and is more or less guaranteed
-                # to be relatively small.
-                try:
-                    mirror = CandidateMirror(mirror_url=mirror_url, updater=self)
-                    mirror.release_gpg_contents = fetch_url(mirror.release_gpg_url, retry=False)
-                    value = (MirrorStatus.AVAILABLE if mirror.is_available else MirrorStatus.UNAVAILABLE)
-                except NotFoundError:
-                    # When the mirror is serving 404 responses it can be an
-                    # indication that the release has gone end of life. In any
-                    # case the mirror is unavailable.
-                    value = MirrorStatus.MAYBE_EOL
-                except Exception:
-                    # When we get an unspecified error that is not a 404
-                    # response we conclude that the mirror is unavailable.
-                    value = MirrorStatus.UNAVAILABLE
-                # Cache the mirror status that we just determined.
-                self.validated_mirrors[key] = value
-            return value
+        mirror_url = normalize_mirror_url(mirror_url)
+        key = (mirror_url, self.distribution_codename)
+        value = self.validated_mirrors.get(key)
+        if value is None:
+            logger.info("Checking if %s is available on %s ..", self.release, mirror_url)
+            # Try to download the Release.gpg file, in the assumption that
+            # this file should always exist and is more or less guaranteed
+            # to be relatively small.
+            try:
+                mirror = CandidateMirror(mirror_url=mirror_url, updater=self)
+                mirror.release_gpg_contents = fetch_url(mirror.release_gpg_url, retry=False)
+                value = (MirrorStatus.AVAILABLE if mirror.is_available else MirrorStatus.UNAVAILABLE)
+            except NotFoundError:
+                # When the mirror is serving 404 responses it can be an
+                # indication that the release has gone end of life. In any
+                # case the mirror is unavailable.
+                value = MirrorStatus.MAYBE_EOL
+            except Exception:
+                # When we get an unspecified error that is not a 404
+                # response we conclude that the mirror is unavailable.
+                value = MirrorStatus.UNAVAILABLE
+            # Cache the mirror status that we just determined.
+            self.validated_mirrors[key] = value
+        return value
 
 
 class CandidateMirror(PropertyManager):
