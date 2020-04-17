@@ -11,6 +11,19 @@ to `semantic versioning`_.
 .. _Keep a Changelog: http://keepachangelog.com/
 .. _semantic versioning: http://semver.org/
 
+`Release 7.2`_ (2020-04-18)
+---------------------------
+
+Add support for `Elementary OS`_ (suggested in `issue #10`_).
+
+Because Elementary OS is based on Ubuntu the new backend is nothing more than a
+thin wrapper for the Ubuntu backend. Its most significant content is a data
+structure with known Elementary OS releases and how they map to Ubuntu.
+
+.. _Release 7.2: https://github.com/xolox/python-apt-mirror-updater/compare/7.1...7.2
+.. _Elementary OS: https://en.wikipedia.org/wiki/Elementary_OS
+.. _issue #10: https://github.com/xolox/python-apt-mirror-updater/issues/10
+
 `Release 7.1`_ (2020-04-17)
 ---------------------------
 
