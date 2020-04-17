@@ -19,6 +19,12 @@ the `apt-mirror-updater` package. The following modules are available:
 .. automodule:: apt_mirror_updater.backends.debian
    :members:
 
+:mod:`apt_mirror_updater.backends.elementary`
+---------------------------------------------
+
+.. automodule:: apt_mirror_updater.backends.elementary
+   :members:
+
 :mod:`apt_mirror_updater.backends.ubuntu`
 -----------------------------------------
 

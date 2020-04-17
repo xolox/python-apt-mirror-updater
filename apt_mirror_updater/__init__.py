@@ -1,7 +1,7 @@
 # Automated, robust apt-get mirror selection for Debian and Ubuntu.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: April 17, 2020
+# Last Change: April 18, 2020
 # URL: https://apt-mirror-updater.readthedocs.io
 
 """
@@ -154,8 +154,8 @@ class AptMirrorUpdater(PropertyManager):
         :raises: :exc:`~exceptions.EnvironmentError` when no matching backend
                  module is available.
         """
-        logger.debug("Checking whether %s platform is supported ..", self.distributor_id.capitalize())
         module_path = "%s.backends.%s" % (__name__, self.distributor_id)
+        logger.debug("Checking if '%s' module can be imported ..", module_path)
         try:
             __import__(module_path)
         except ImportError:
@@ -522,7 +522,7 @@ class AptMirrorUpdater(PropertyManager):
             if arch:
                 debootstrap_command.append('--arch=%s' % arch)
             debootstrap_command.append('--keyring=%s' % self.release.keyring_file)
-            debootstrap_command.append(self.distribution_codename)
+            debootstrap_command.append(self.release.upstream_series)
             debootstrap_command.append(directory)
             debootstrap_command.append(self.best_mirror)
             self.context.execute(*debootstrap_command, sudo=True)
@@ -865,9 +865,9 @@ class CandidateMirror(PropertyManager):
         :attr:`~AptMirrorUpdater.distribution_codename` property of the
         :attr:`updater` object.
         """
-        if self.updater and self.updater.distribution_codename:
+        if self.updater and self.updater.release.upstream_series:
             return '%s/dists/%s/Release.gpg' % (
-                self.mirror_url, self.updater.distribution_codename,
+                self.mirror_url, self.updater.release.upstream_series,
             )
 
     @mutable_property

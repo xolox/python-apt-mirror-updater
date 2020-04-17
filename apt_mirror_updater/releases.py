@@ -1,7 +1,7 @@
 # Easy to use metadata on Debian and Ubuntu releases.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: April 16, 2020
+# Last Change: April 18, 2020
 # URL: https://apt-mirror-updater.readthedocs.io
 
 """
@@ -123,7 +123,7 @@ def coerce_release(value):
 @cached
 def discover_releases():
     """
-    Discover known Debian and Ubuntu releases.
+    Discover known Debian, Elementary OS and Ubuntu releases.
 
     :returns: A list of discovered :class:`Release` objects sorted by
              :attr:`~Release.distributor_id` and :attr:`~Release.version`.
@@ -131,10 +131,12 @@ def discover_releases():
     The first time this function is called it will try to parse the CSV files
     in ``/usr/share/distro-info`` using :func:`parse_csv_file()` and merge any
     releases it finds with the releases embedded into the source code of this
-    module. The result is cached and returned each time the function is called.
-    It's not a problem if the ``/usr/share/distro-info`` directory doesn't
-    exist or doesn't contain any ``*.csv`` files (it won't cause a warning or
-    error). Of course in this case only the embedded releases will be returned.
+    module and the releases defined by
+    :data:`apt_mirror_updater.backends.elementary.KNOWN_RELEASES`. The result
+    is cached and returned each time the function is called. It's not a problem
+    if the ``/usr/share/distro-info`` directory doesn't exist or doesn't
+    contain any ``*.csv`` files (it won't cause a warning or error). Of course
+    in this case only the embedded releases will be returned.
     """
     # Discover the known releases on the first call to discover_releases().
     # First we check the CSV files on the system where apt-mirror-updater
@@ -144,10 +146,14 @@ def discover_releases():
     for filename in glob.glob(os.path.join(DISTRO_INFO_DIRECTORY, '*.csv')):
         for release in parse_csv_file(filename):
             result.add(release)
-    # Add the releases bundled with apt-mirror-updater to the result
-    # without causing duplicate entries (due to the use of a set and key
+    # Add the Debian and Ubuntu releases bundled with apt-mirror-updater to the
+    # result without causing duplicate entries (due to the use of a set and key
     # properties).
     result.update(BUNDLED_RELEASES)
+    # Add the Elementary OS releases bundled with apt-mirror-updater.
+    # We import the known releases here to avoid circular imports.
+    from apt_mirror_updater.backends import elementary
+    result.update(elementary.KNOWN_RELEASES)
     # Sort the releases by distributor ID and version / series.
     return sorted(result, key=lambda r: (r.distributor_id, r.version or 0, r.series))
 
@@ -240,7 +246,7 @@ def ubuntu_keyring_updated():
 
 class Release(PropertyManager):
 
-    """Data class for metadata on Debian and Ubuntu releases."""
+    """Data class for metadata on Debian, Elementary OS and Ubuntu releases."""
 
     @key_property
     def codename(self):
@@ -252,7 +258,7 @@ class Release(PropertyManager):
 
     @key_property
     def distributor_id(self):
-        """The name of the distributor (a string like ``debian`` or ``ubuntu``)."""
+        """The name of the distributor (one of the strings ``debian``, ``elementary`` or ``ubuntu``)."""
 
     @writable_property
     def eol_date(self):
@@ -284,6 +290,21 @@ class Release(PropertyManager):
         """The short version of :attr:`codename` (a string)."""
 
     @writable_property
+    def upstream_distributor_id(self):
+        """The upstream distributor ID (a string, defaults to :attr:`distributor_id`)."""
+        return self.distributor_id
+
+    @writable_property
+    def upstream_series(self):
+        """The upstream series (a string, defaults to :attr:`series`)."""
+        return self.series
+
+    @writable_property
+    def upstream_version(self):
+        """The upstream version (a string, defaults to :attr:`version`)."""
+        return self.version
+
+    @writable_property
     def version(self):
         """
         The version number of the release (a :class:`~decimal.Decimal` number).
@@ -304,12 +325,12 @@ class Release(PropertyManager):
         filename = None
         reason = None
         logger.debug("Selecting keyring file for %s ..", self)
-        if self.distributor_id == 'debian':
+        if self.upstream_distributor_id == 'debian':
             filename = DEBIAN_KEYRING_CURRENT
             reason = "only known keyring"
-        elif self.distributor_id == 'ubuntu':
+        elif self.upstream_distributor_id == 'ubuntu':
             if ubuntu_keyring_updated():
-                if self.version > decimal.Decimal('12.04'):
+                if self.upstream_version > decimal.Decimal('12.04'):
                     filename = UBUNTU_KEYRING_CURRENT
                     reason = "new keyring package / new release"
                 else:
@@ -337,6 +358,8 @@ class Release(PropertyManager):
         if self.version:
             label.append(str(self.version))
         label.append("(%s)" % self.series)
+        if self.upstream_distributor_id and self.upstream_version:
+            label.extend(("based on", self.upstream_distributor_id.title(), str(self.upstream_version)))
         return " ".join(label)
 
 
@@ -349,9 +372,17 @@ class Release(PropertyManager):
 # indent = " " * 4
 # cog.out("\nBUNDLED_RELEASES = [\n")
 # for release in discover_releases():
+#     if release.distributor_id == 'elementary':
+#         # Don't duplicate the Elementary OS releases.
+#         continue
 #     cog.out(indent + "Release(\n")
 #     for name in release.find_properties(cached=False):
 #         value = getattr(release, name)
+#         if ((name == 'upstream_distributor_id' and value == release.distributor_id) or
+#                 (name == 'upstream_series' and value == release.series) or
+#                 (name == 'upstream_version' and value == release.version)):
+#             # Skip redundant values.
+#             continue
 #         if value is not None:
 #             if isinstance(value, decimal.Decimal):
 #                 # It seems weirdly inconsistency to me that this is needed
