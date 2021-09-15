@@ -11,6 +11,30 @@ to `semantic versioning`_.
 .. _Keep a Changelog: http://keepachangelog.com/
 .. _semantic versioning: http://semver.org/
 
+`Release 7.3`_ (2021-09-15)
+---------------------------
+
+**Significant changes:**
+
+- Updated the releases bundled in the :mod:`~apt_mirror_updater.releases`
+  module to include the following:
+
+  - Ubuntu 20.10 (Groovy Gorilla)
+  - Ubuntu 21.04 (Hirsute Hippo)
+  - Ubuntu 21.10 (Impish Indri)
+
+- Relaxed the :pypi:`beautifulsoup4` requirement to facilitate Python 2
+  compatibility (release 4.9.3 was the last to support Python 2 whereas
+  our requirements insisted on >= 4.4.1).
+
+**Miscellaenous changes:**
+
+- Updated the :func:`~apt_mirror_updater.releases.parse_version()` documentation
+  to refer to :class:`decimal.Decimal` instead of "a floating point number" (to
+  avoid any confusion).
+
+.. _Release 7.3: https://github.com/xolox/python-apt-mirror-updater/compare/7.2...7.3
+
 `Release 7.2`_ (2020-04-18)
 ---------------------------
 
