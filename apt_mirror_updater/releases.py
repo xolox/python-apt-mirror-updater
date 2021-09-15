@@ -1,7 +1,7 @@
 # Easy to use metadata on Debian and Ubuntu releases.
 #
 # Author: Peter Odding <peter@peterodding.com>
-# Last Change: April 18, 2020
+# Last Change: September 15, 2021
 # URL: https://apt-mirror-updater.readthedocs.io
 
 """
@@ -211,7 +211,7 @@ def parse_date(value):
 
 
 def parse_version(value):
-    """Convert a version string to a floating point number."""
+    """Convert a version string to a :class:`~decimal.Decimal` number."""
     for token in value.split():
         try:
             return decimal.Decimal(token)
