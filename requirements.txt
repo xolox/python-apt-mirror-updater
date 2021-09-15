@@ -1,6 +1,8 @@
 # Installation requirements for apt-mirror-updater.
+#
+# NB: Release 4.9.3 of beautifulsoup4 is the last version to support Python 2.
 
-beautifulsoup4 >= 4.4.1
+beautifulsoup4 >= 4.9.3
 capturer >= 3.0
 coloredlogs >= 10.0
 executor >= 21.3
