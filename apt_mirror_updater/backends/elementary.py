@@ -109,6 +109,17 @@ KNOWN_RELEASES = [
         series='hera',
         version=decimal.Decimal('5.1'),
     ),
+    Release(
+        codename='Odin',
+        created_date=datetime.date(2021, 8, 10),
+        distributor_id='elementary',
+        upstream_distributor_id='ubuntu',
+        upstream_series='focal',
+        upstream_version=decimal.Decimal('20.04'),
+        is_lts=False,
+        series='odin',
+        version=decimal.Decimal('6.0'),
+    ),
 ]
 """
 List of :class:`.Release` objects corresponding to known elementary OS
